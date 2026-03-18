@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Serveur de découverte
+  consul:
+    image: hashicorp/consul:latest
+    container_name: consul-server
+    ports:
+      - "8500:8500"
+    command: "agent -dev -client=0.0.0.0"
+
+  # Base de données du Billing Service
+  postgres-billing:
+    image: postgres:15
+    container_name: billing_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: billingdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_billing_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Base de données du Customer Service
+  postgres-customer:
+    image: postgres:15
+    container_name: customer_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: customerdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_customer_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_billing_data:
+  postgres_customer_data:
