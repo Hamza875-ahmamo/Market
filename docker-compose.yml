@@ -1,6 +1,10 @@
 version: '3.8'
 
 services:
+  # =============================================
+  # INFRASTRUCTURE
+  # =============================================
+
   # Serveur de découverte
   consul:
     image: hashicorp/consul:latest
@@ -8,20 +12,8 @@ services:
     ports:
       - "8500:8500"
     command: "agent -dev -client=0.0.0.0"
-
-  # Base de données du Billing Service
-  postgres-billing:
-    image: postgres:15
-    container_name: billing_db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: billingdb
-    ports:
-      - "5434:5432"
-    volumes:
-      - postgres_billing_data:/var/lib/postgresql/data
-    restart: unless-stopped
+    networks:
+      - market-network
 
   # Base de données du Customer Service
   postgres-customer:
@@ -36,7 +28,83 @@ services:
     volumes:
       - postgres_customer_data:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - market-network
 
+  # Base de données du Billing Service
+  postgres-billing:
+    image: postgres:15
+    container_name: billing_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: billingdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_billing_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - market-network
+
+  # =============================================
+  # SERVICES APPLICATIFS
+  # =============================================
+
+  # Customer Service (port 8081)
+  customer-service:
+    build:
+      context: ./customer-service
+      dockerfile: src/main/docker/Dockerfile.jvm
+    container_name: customer-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - consul
+      - postgres-customer
+    networks:
+      - market-network
+    restart: unless-stopped
+
+  # Billing Service (port 8082)
+  billing-service:
+    build:
+      context: ./billing-service
+      dockerfile: src/main/docker/Dockerfile.jvm
+    container_name: billing-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - consul
+      - postgres-billing
+      - customer-service
+    networks:
+      - market-network
+    restart: unless-stopped
+
+  # Gateway Service (port 8888)
+  gateway-service:
+    build:
+      context: ./gateway-service
+      dockerfile: src/main/docker/Dockerfile.jvm
+    container_name: gateway-service
+    ports:
+      - "8888:8888"
+    depends_on:
+      - consul
+      - customer-service
+      - billing-service
+    networks:
+      - market-network
+    restart: unless-stopped
+
+# =============================================
+# VOLUMES & NETWORKS
+# =============================================
 volumes:
   postgres_billing_data:
   postgres_customer_data:
+
+networks:
+  market-network:
+    driver: bridge

@@ -1,8 +1,9 @@
-    package org.softsofi.web;
-
+    
+package org.softsofi.controllers;
 import java.util.List;
-import org.softsofi.dto.CustomerRequestDTO;
-import org.softsofi.dto.CustomerResponceDTO;
+import org.softsofi.dto.CustomerCreateDTO;
+import org.softsofi.dto.CustomerUpdateDTO;
+import org.softsofi.dto.CustomerResponseDTO;
 import org.softsofi.exeception.CustomerNotFoundExeception;
 import org.softsofi.services.CustomerService;
 import jakarta.ws.rs.*;
@@ -17,29 +18,29 @@ public class CustomerRestApi {
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public CustomerResponceDTO getCustomer(@PathParam("id") Long id) throws CustomerNotFoundExeception {
+    public CustomerResponseDTO getCustomer(@PathParam("id") Long id) throws CustomerNotFoundExeception {
         return customerService.getCustomer(id);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public List<CustomerResponceDTO> getAllCustomers() {
+    public List<CustomerResponseDTO> getAllCustomers() {
         return customerService.getAllCustomers();
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public CustomerResponceDTO save(CustomerRequestDTO customerRequestDTO) {
-        return customerService.save(customerRequestDTO);
+    public CustomerResponseDTO save(CustomerCreateDTO createDTO) {
+        return customerService.save(createDTO);
     }
 
     @PUT
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public CustomerResponceDTO updateCustomer(@PathParam("id") Long id, CustomerRequestDTO customerRequestDTO) throws CustomerNotFoundExeception {
-        return customerService.updateCustomer(id, customerRequestDTO);
+    public CustomerResponseDTO updateCustomer(@PathParam("id") Long id, CustomerUpdateDTO updateDTO) throws CustomerNotFoundExeception {
+        return customerService.updateCustomer(id, updateDTO);
     }
 
     @DELETE

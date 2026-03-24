@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomerRequestDTO {
-    private String name;
-    private String email;
+public class CustomerUpdateDTO {
+    public String name;
+    public String email;
 }

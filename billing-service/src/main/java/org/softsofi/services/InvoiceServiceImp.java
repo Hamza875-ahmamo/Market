@@ -3,8 +3,9 @@ package org.softsofi.services;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.softsofi.dto.InvoiceRequestDTO;
-import org.softsofi.dto.InvoiceResponceDto;
+import org.softsofi.dto.InvoiceCreateDTO;
+import org.softsofi.dto.InvoiceUpdateDTO;
+import org.softsofi.dto.InvoiceResponseDTO;
 import org.softsofi.entities.Customer;
 import org.softsofi.entities.Invoice;
 import org.softsofi.exeception.CustomerNotFoundExeception;
@@ -34,7 +35,7 @@ public class InvoiceServiceImp implements InvoiceService {
     }
 
     @Override
-    public List<InvoiceResponceDto> getAllInvoices() {
+    public List<InvoiceResponseDTO> getAllInvoices() {
         List<Invoice> invoices = invoiceRepository.listAll();
         return invoices.stream().map(invoice -> {
             try {
@@ -43,13 +44,13 @@ public class InvoiceServiceImp implements InvoiceService {
             } catch (Exception e) {
                    throw new CustomerNotFoundExeception("Customer not found");
             }
-            return invoiceMapper.toInvoiceResponceDto(invoice);
+            return invoiceMapper.toInvoiceResponseDTO(invoice);
         }).collect(Collectors.toList());
     }
 
     @Override
-    public InvoiceResponceDto save(InvoiceRequestDTO invoiceRequestDTO) {
-        Invoice invoice = invoiceMapper.toInvoice(invoiceRequestDTO);
+    public InvoiceResponseDTO save(InvoiceCreateDTO createDTO) {
+        Invoice invoice = invoiceMapper.toInvoice(createDTO);
         invoiceRepository.persist(invoice);
         
         // Fetch the customer using the REST client
@@ -61,11 +62,11 @@ public class InvoiceServiceImp implements InvoiceService {
             throw new CustomerNotFoundExeception("Customer not found for ID: " + invoice.getCustomerId() + " | Cause: " + e.getMessage());
         }
 
-        return invoiceMapper.toInvoiceResponceDto(invoice);
+        return invoiceMapper.toInvoiceResponseDTO(invoice);
     }
 
     @Override
-    public InvoiceResponceDto getInvoice(Long id) throws InvoiceNotFoundExeception, CustomerNotFoundExeception {
+    public InvoiceResponseDTO getInvoice(Long id) throws InvoiceNotFoundExeception, CustomerNotFoundExeception {
         Invoice invoice = invoiceRepository.findById(id);
         if (invoice == null) {
             throw new InvoiceNotFoundExeception("Invoice not found");
@@ -75,11 +76,11 @@ public class InvoiceServiceImp implements InvoiceService {
             throw new CustomerNotFoundExeception("Customer not found");
         }
         invoice.setCustomer(customer);
-        return invoiceMapper.toInvoiceResponceDto(invoice);
+        return invoiceMapper.toInvoiceResponseDTO(invoice);
     }
 
     @Override
-    public List<InvoiceResponceDto> invoicesByCustomerId(Long customerId) {
+    public List<InvoiceResponseDTO> invoicesByCustomerId(Long customerId) {
         List<Invoice> invoices = invoiceRepository.findByCustomerId(customerId);
         return invoices.stream().map(
             invoice -> {
@@ -89,9 +90,27 @@ public class InvoiceServiceImp implements InvoiceService {
                 } catch (Exception e) {
                     throw new CustomerNotFoundExeception("Customer not found");
                 }
-                return invoiceMapper.toInvoiceResponceDto(invoice);
-            }).toList();
-
+                return invoiceMapper.toInvoiceResponseDTO(invoice);
+            }).collect(Collectors.toList());
     }
 
+    @Override
+    public InvoiceResponseDTO updateInvoice(Long id, InvoiceUpdateDTO updateDTO) throws InvoiceNotFoundExeception, CustomerNotFoundExeception {
+        Invoice invoice = invoiceRepository.findById(id);
+        if (invoice == null) {
+            throw new InvoiceNotFoundExeception("Invoice not found");
+        }
+        
+        invoiceMapper.updateInvoiceFromDto(updateDTO, invoice);
+        invoiceRepository.persist(invoice);
+        
+        try {
+            Customer customer = customerRestClient.getCustomerById(invoice.getCustomerId());
+            invoice.setCustomer(customer);
+        } catch (Exception e) {
+            throw new CustomerNotFoundExeception("Customer not found for ID: " + invoice.getCustomerId() + " | Cause: " + e.getMessage());
+        }
+
+        return invoiceMapper.toInvoiceResponseDTO(invoice);
+    }
 }
